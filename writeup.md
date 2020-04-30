@@ -90,10 +90,10 @@ The 4 points on this image gave a suitable polygon are are shown as the source c
 
 | Source        | Destination      | 
 |:-------------:|:----------------:| 
-| 598, 445      | 200, 0           | 
-| 683, 445      | xsize-200, 0     |
-| 272, 675      | 200, ysize       |
-| 1052, 675     | xsize-200, ysize |
+| 598, 445      | 250, 0           | 
+| 683, 445      | xsize-250, 0     |
+| 272, 675      | 250, ysize       |
+| 1052, 675     | xsize-250, ysize |
 
 Having manually defined these points, a sensible next step would be to normalize their coordinates to the frame size rather than assume the image will always be 1280 x 720. 
 
@@ -105,6 +105,7 @@ Below is an example showing one of the transforms applied. In theory the final i
 
 The code for the transform can be found in the pipeline step (5th) cell of the IPython notebook. It calculates the transform function, as well as the inverse transform (by swapping source and destination) that will be used at the end of the pipeline, outside the processing loop for efficiency. These are then wrapped up in the `pipeline_perspectivetransform` and `pipeline_inverttransform` functions.
 
+It is worth not
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
@@ -118,7 +119,7 @@ The code itself consists of two functions `fit_poly` uses the numpy library to f
 
 The polynomial coefficients for both the left and right lane are stored as global variables that are updated each step, accordingly everytime the polynomial is updated the initial guess is also updated. When working with a video input this automatically means the initial guess is based on the output of the previous frame. 
 
-The final step of the pipeline step is to colour in the activatated pixels within the windows and plot the resulting fit line. An example is shown below.
+The final step of the pipeline step is to identify the region between the two lane lines and paint the lane itself. This is simply a case of taking points in the image bounded by the the polynomial fits. The resulting image shows the lane lines for clarity and the lane itself painted white. 
 
 ![alt text][image8]
 
@@ -134,7 +135,7 @@ curverad = ((1 + (2*fit[0]*y_eval + fit[1])**2)**1.5) / np.absolute(2*left_fit[0
 ```
 where y_eval is the point at which we are evaluating the curvature. In this case it is the bottom of the image, or the current location of the car.
 
-It should be noted that this calculates the curvature of the line in pixels and therefore needs converting to actual distances. As no measures are provided, these need to be estimated for this purpose. Given that the lane on the highway in the USA is approximately 3.7m and in the image it is 880 pixels, the conversion can be defined as xm_per_pixel = 3.7 / 880. 
+It should be noted that this calculates the curvature of the line in pixels and therefore needs converting to actual distances. As no measures are provided, these need to be estimated for this purpose. Given that the lane on the highway in the USA is approximately 3.7m and in the image it is 880 pixels, the conversion can be defined as xm_per_pixel = 3.7 / 780. 
 
 For the y axis, it is a little more difficult but an approximation would suggest it is about 30 metres being used as the region of interest. This will change with inclination and camera pitch but will suffice for these purposes. According ym_per_pixel = 30 / 720.
 
@@ -170,6 +171,8 @@ To try and help with this process, a seperate notebook was created that iterated
 Once this stage was achieved with a suitable level of accuracy, the remaining stages of the pipeline fell into place. Some debugging was necessary to ensure that the radius of curvature, particularly the conversion from pixels to metres and the lane offset, was correct and some iteration was required on the polyfit of the lane lines. Here, as it is a recursive process, the initial guess had to be tweaked for each sample image to ensure the first fit was appropriate. When moving to the video this was less of an issue as the previous frame was available. 
 
 Looking at the final result the most likely area for the pipeline to fall over would be due to the issue already noted with the shadows cast over the road surface confusing the lane fitting algorithm. Further work could be performed to try further refine the thresholding to better cope with these shadows. One method is suggested previously in the text. In addition various other techniques could be employed to impose more realistic limits on the lane fitting as a function of time - for example a low pass filter as we know that the lanes do not change dramatically, particularly on a highway.
+
+In addition there are some occasions where the detection of the lane seems to be truncated when the road curvature increases. This seems to be due to the perspective transformed image - in the pipeline, the lane was projected onto the image with a 200 pixel margin either side of the straight lines. This is probably not quite sufficient at the higher curvatures and is being clipped. Increasing this margin would resolve the issue.
 
 Finally, there are certain refactoring elements that could be applied to the resulting code to tidy it up. The use of global variables could be tidied up and there are some inefficiencies in the calculation that have come about as each stage is developed in isolation. For production this would be cleaned up but has been left as is to demonstrate each step independently as well as being formally parameteristed to make a pipeline robust against different image sizes, camera positions and installations. 
 
