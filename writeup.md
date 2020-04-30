@@ -1,7 +1,5 @@
 ## Advanced Lane Finding Project Writeup
 
----
-
 **Advanced Lane Finding Project**
 
 The goals / steps of this project are the following:
@@ -17,23 +15,19 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-
-[image1]: ./camera_cal/calibration2.jpg "Original"
-[image2]: ./output_images/calibration2_undistorted.jpg "Undistorted"
-
-[image3]: ./examples/undistort_output.png "Undistorted"
-[image4]: ./test_images/test1.jpg "Road Transformed"
+[image3]: ./WriteUpImages/cameracal.jpg "Camera Calibration"
+[image4]: ./WriteUpImages/test6_colourtransformed.jpg "Road Transformed"
 
 [image5]: ./WriteUpImages/straight2_undistorted.jpg "Straight Lanes - Undistorted"
 [image6]: ./WriteUpImages/straight2_undistorted_polygon.jpg "Straight Lanes - with road polygon"
 [image7]: ./WriteUpImages/straight2_undistorted_transformed_polygon.jpg "Straight Lanes - Bird's eye view"
 
 [image8]: ./WriteUpImages/test2_slidingwindows.jpg "Sliding Windows Example"
-[image9]: ./examples/warped_straight_lines.jpg "Warp Example"
+[image9]: ./WriteUpImages/Processed_output.jpg "Final Pipeline Output"
 
 [video1]: ./project_video.mp4 "Video"
 
-## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
+[Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
 
 ---
 
@@ -46,37 +40,40 @@ This write up describes the details of the implementation along with issues expe
 
 #### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
-Camera calibration was performed in the seperate `CameraCalibration.ipynb` notebook and was based on the example [code](https://github.com/udacity/CarND-Camera-Calibration). It was kept seperate as the camera calibration is essentially a pre-processing step that only has to be performed once. Once complete the calibration information was saved to a pickle file that is loaded into the main pipeline processing notebook.
+Camera calibration was performed in the seperate `CameraCalibration.ipynb` notebook and was based on the example [code](https://github.com/udacity/CarND-Camera-Calibration). It is in a seperate notebook as the camera calibration is essentially a pre-processing step that only needs to be performed once. After completion the calibration coefficients were saved to a pickle file that can be loaded into the main pipeline processing notebook.
 
-The calculation of the camera matrix follows the description already provide below
+The calculation of the camera matrix follows the description already provided below
 
 >I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
 
->I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result: 
+>I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()`.
 
-![alt text][image1]
-![alt text][image2]
+Here is an example of the result of the calibration process applied to one of the images:
 
-The calibration created attempted to use all of the camera calibration images provided. Initially it failed on most images as the 8x6 grid could not be found. Changing this to 9x6 and updating the objp array size resolved this issue with only 3 images now failing. It is likely that by combining different grid sizes for the algorithm to find, these images could be included in the calibration but a satisfactory result was obtained without that being necessary.
+![alt text][image3]
+
+The calibration created attempted to use all of the camera calibration images provided. Initially it failed on most images an 8x6 grid could not be found. After checking the actual image and changing this to search for a 9x6 grid and updating the objp array size resolved this issue with only 3 images now failing. It is likely that by combining different grid sizes for the algorithm to find, these images could be included in the calibration but a satisfactory result was obtained without that being necessary.
 
 
 ### Pipeline (single images)
 
 #### 1. Provide an example of a distortion-corrected image.
 
-This first stage of the image processing pipeline used the OpenCV function to apply the previously calculated camera calibration to the image. 
+The first stage of the image processing pipeline used the OpenCV function to apply the previously calculated camera calibration to the image.
 
 ```python
 img = cv2.undistort(img, mtx, dist, None, mtx)
 ```
 
-![alt text][image3]
+An example of an undistorted image is shown below:
+
+![alt text][image5]
 
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
-The thresholded binary images was created by a combination of colour transforms, selecting only the Saturation channel after an RGB->HLS conversion, combined with a gradient thresholding using the sobel method.
+Taking the undistorted image, a thresholded binary images was created by applying a combination of colour transforms, selecting only the Saturation channel after an RGB->HLS conversion and combining the output with a gradient thresholding using the sobel method.
 
-In order to tune the thresholds, a seperate notebook (ImageProcessingTesting.ipnyb) was created to scan through the thresholding parameters using the test images. An example of the output of this process is shown below.
+In order to tune the thresholds, a seperate notebook (ImageProcessingTesting.ipnyb) was created to scan through the thresholding parameters using the set of test images. An example of the output of this process is shown below.
 
 ![alt text][image4]
 
@@ -89,7 +86,7 @@ As an extention to this work, the next steps would be to consider CLAHE (Contras
 
 Stage 3 of the pipeline took the road in front of the car and performed a perspective transform to give a bird's eye view. The road surface itself was identified manually from a sample image (taken post the undistort step) where the car appears to be on a straight section of road. 
 
-The 4 points obtained to give a suitable polygon are shown as source in the table below. The destination points are then the four corners of the output image. As the points refer to the actual lane line on the left and right, a 200 pixel margin outside the lane has been included.
+The 4 points on this image gave a suitable polygon are are shown as the source column in the table below. The destination points are then the four corners of the output image that the source polygon will be mapped to. As the points refer to the actual lane lines on the left and right of the car, a 200 pixel margin outside the lane has been included to show any curvature.
 
 | Source        | Destination      | 
 |:-------------:|:----------------:| 
@@ -98,40 +95,39 @@ The 4 points obtained to give a suitable polygon are shown as source in the tabl
 | 272, 675      | 200, ysize       |
 | 1052, 675     | xsize-200, ysize |
 
-Having manually defined these points, a sensible next step would be to normalize their coordinates to the frame size rather than assume the image will always be 1280 x 720. This has already been done for the destination frame. 
+Having manually defined these points, a sensible next step would be to normalize their coordinates to the frame size rather than assume the image will always be 1280 x 720. 
 
-Below is an example showing one of the transforms applied. In theory it should look perfectly parallel in the processed image although there is a slight deviation. This has come about because the manual technique was applied to the two images and a slight difference was witnessed - hence this transform is an average of the two as there is no way to discern which of the examples is more representative. More examples could be further analysed to improve the accuracy of the transform if it causes issues further down the line.
+Below is an example showing one of the transforms applied. In theory the final image should show perfectly parallel lane linesalthough there is a slight deviation in this example. This has come about because the manual technique was applied to the two images and a slight difference was witnessed - hence this transform is an average of the two as there is no way to discern which of the examples is more representative. More examples could be further analysed to improve the accuracy of the transform if it causes issues further down the line.
 
-![alt text][image5]
 ![alt text][image6]
 ![alt text][image7]
 
 
-The code for the transform can be found in the pipeline step cells of the IPython notebook. It calculates the transform, as well as the inverse transform that will be used at the end of the pipeline, outside for efficiency. These are then wrapped up in the `pipeline_perspectivetransform` and `pipeline_inverttransform` functions.
+The code for the transform can be found in the pipeline step (5th) cell of the IPython notebook. It calculates the transform function, as well as the inverse transform (by swapping source and destination) that will be used at the end of the pipeline, outside the processing loop for efficiency. These are then wrapped up in the `pipeline_perspectivetransform` and `pipeline_inverttransform` functions.
 
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Stage 4 of the pipeline (defined in the 6th cell in the notebook) takes the bird's eye view and uses a sliding window algorithm to work up the image and identify the lane line before fitting a 2nd order polynomal to the results.
+Stage 4 of the pipeline (defined in the 6th cell in the notebook) takes the bird's eye view output of the previous step and uses a sliding window algorithm to work up the image and identify the lane line before fitting a 2nd order polynomal to the results.
 
-The algorithm works by using the previous frames (or a suitable initial guess) polynomial fits as a starting point before applying a window around this line. For each window, the centre of the line is calculated and these points are used to perform a new polyinomal fit. 
+The algorithm works by using the previous frames (or a suitable initial guess) polynomial fits as a starting point before applying a windowed margin to the left and right of this line. For each window, the centre of the line is calculated and these points are used to perform a new polyinomal fit. 
 
-This line then describes the lane in the Bird's eye frame.
+This fit line should then describes the lane in the Bird's eye frame.
 
-The code itself consists of two functions `fit_poly` uses the numpy library to fit the polynomial to a series of points that represent the centre of the line. `search_around_poly` takes the binary image, extracts any points that are activated and then fits the sliding window around the original polynomial and throws away any other points. Applying the `fit_poly` to these remaining points cunningly pulls the line towards dense clusters of activated pixels elegantly skipping the step of trying to iterate through each row of the image and calculating the position of the lane at each point. 
+The code itself consists of two functions `fit_poly` uses the numpy library to fit the polynomial to a series of points that represent the centre of the line. `search_around_poly` takes the binary image, extracts any points that are activated and then fits the sliding window around the original polynomial and throws away any other points. Applying the `fit_poly` to these remaining points cunningly pulls the line towards dense clusters of activated pixels more elegantly than iterating through each row of the image and calculating the position of the lane at each point. 
 
-The polynomial coefficients for both the left and right lane are stored as global variables that are updated each step, accordingly everytime the polynomial is updated the initial guess is also updated.
+The polynomial coefficients for both the left and right lane are stored as global variables that are updated each step, accordingly everytime the polynomial is updated the initial guess is also updated. When working with a video input this automatically means the initial guess is based on the output of the previous frame. 
 
-The final step of the pipeline step is to colour in the window and plot the resulting fit line. An example is shown below.
+The final step of the pipeline step is to colour in the activatated pixels within the windows and plot the resulting fit line. An example is shown below.
 
 ![alt text][image8]
 
-Note this algorithm can be tuned by defining the size of the window around the existing line. In this case a value of 125 pixels was chosen. By reducing the window size the algorithm is less sensitive to spurious pixels and the polynomial should not change as much from frame-to-frame. However, this leaves the possibility of not tracking higher curvatures. the value chosen in this case seems appropriate for the highway scenario although could be further wrapped up with either a low-pass filter or a slew-rate limiting filter that only permits a certain degree of variation between consecutive frames. This would seem sensible as it is highly unlikely that the lane lines will change dramatically within the time step of the frame. These filters are suggested and recommended but have not been investigated in this submission.
+Note this algorithm can be tuned by defining the size of the window around the existing line. In this case a value of 100 pixels was chosen. By reducing the window size the algorithm is less sensitive to spurious pixels and the polynomial should not change as much from frame-to-frame. However, this leaves the possibility of not tracking higher curvatures or more dynamic changes in lane. The value chosen in this case seems appropriate for the highway scenario although could be further wrapped up with either a low-pass filter or a slew-rate limiting filter that only permits a certain degree of variation between consecutive frames. This would seem sensible as it is highly unlikely that the lane lines will change dramatically within the time step of the frame. These filters are suggested and recommended but have not been investigated in this submission.
 
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-Having calculated approprate polynomial fits to the lane lines, calculating the curvature is a matter of differentiation. That is achieved with the following formula:
+Having calculated approprate polynomial coefficients to fit a line to the lane lines, calculating the curvature is a matter of differentiation. That is achieved with the following formula:
 
 ```
 curverad = ((1 + (2*fit[0]*y_eval + fit[1])**2)**1.5) / np.absolute(2*left_fit[0])
@@ -142,7 +138,7 @@ It should be noted that this calculates the curvature of the line in pixels and 
 
 For the y axis, it is a little more difficult but an approximation would suggest it is about 30 metres being used as the region of interest. This will change with inclination and camera pitch but will suffice for these purposes. According ym_per_pixel = 30 / 720.
 
-In addition to the curvature calculation, this code cell includes the function to calculate offset. Here the lane fits are used to determine where the centre of the lane is relative to the centre of the car (assuming the camera is in the centre of the car) and calculated the offset between the two in metres.
+In addition to the curvature calculation, this code cell includes the function to calculate offset. Here the lane fits are used to determine where the centre of the lane is relative to the centre of the car (assuming the camera is in the centre of the car) before calculating the offset between the two in metres.
 
 
 
